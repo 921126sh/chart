@@ -143,11 +143,11 @@ function drawItem() {
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
     for (idx; idx < items.length; idx++) {
-        // ang = (180 - getPointDegree()) + 180) * (180 / Math.PI) * (Math.PI / 180);
+        // ang = (180 - getPointDegree()) + 180) * (Math.PI / 180);
         ang = idx * Math.PI / (items.length / 2);
 
         if (isMouseDown && idx === selItemIdx) {
-            ang = Math.sign(curMovingCoordinate.x) === -1 ? (180 - getPointDegree(curMovingCoordinate) + 180) * (180 / Math.PI) * (Math.PI / 180) : getPointDegree(curMovingCoordinate) * (180 / Math.PI) * (Math.PI / 180);
+            ang = Math.sign(curMovingCoordinate.x) === -1 ? (180 - (getPointDegree(curMovingCoordinate)) + 180) * (Math.PI / 180) : getPointDegree(curMovingCoordinate) * (Math.PI / 180);
         }
 
         x = Math.sin(ang) * radius * 1.15;
@@ -165,7 +165,7 @@ function drawItem() {
 }
 
 function getPointDegree(coor) {
-    return Math.acos((-radius * coor.y) / SQRT);
+    return Math.acos((-radius * coor.y) / SQRT) * (180 / Math.PI);
 }
 
 /**
@@ -179,7 +179,7 @@ function drawDirection() {
     for (var idx = 0; idx < items.length; idx++) {
         ang = idx * Math.PI / (items.length / 2);
         if (isMouseDown && idx === selItemIdx) {
-            ang = Math.sign(curMovingCoordinate.x) === -1 ? (180 - getPointDegree(curMovingCoordinate) + 180) * (180 / Math.PI) * (Math.PI / 180) : getPointDegree(curMovingCoordinate) * (180 / Math.PI) * (Math.PI / 180);
+            ang = Math.sign(curMovingCoordinate.x) === -1 ? (180 - (getPointDegree(curMovingCoordinate)) + 180) * (Math.PI / 180) : getPointDegree(curMovingCoordinate) * (Math.PI / 180);
         }
 
         x = Math.sin(ang) * radius;
@@ -204,7 +204,7 @@ function drawRange() {
     for (var idx = 0; idx < items.length; idx++) {
         ang = idx * Math.PI / (items.length / 2);
         if (isMouseDown && idx === selItemIdx) {
-            ang = Math.sign(curMovingCoordinate.x) === -1 ? (180 - getPointDegree(curMovingCoordinate) + 180) * (180 / Math.PI) * (Math.PI / 180) : getPointDegree(curMovingCoordinate) * (180 / Math.PI) * (Math.PI / 180);
+            ang = Math.sign(curMovingCoordinate.x) === -1 ? (180 - (getPointDegree(curMovingCoordinate)) + 180) * (Math.PI / 180) : getPointDegree(curMovingCoordinate) * (Math.PI / 180);
         }
 
         high = radius * (items[idx].high / 100);
@@ -232,8 +232,8 @@ canvas.onmousedown = function (event) {
     selItemIdx = chartHelper.checkCursorRange(event);
     var prevIdx = selItemIdx === 0 ? items.length - 1 : selItemIdx - 1;
     var nextIdx = selItemIdx === items.length - 1 ? 0 : selItemIdx + 1;
-    prevDegree = Math.sign(itemRects[prevIdx].x) === -1 ? 180 - (getPointDegree(itemRects[prevIdx]) * (180 / Math.PI)) + 180 :  getPointDegree(itemRects[prevIdx]) * (180 / Math.PI);
-    nextDegree = Math.sign(itemRects[nextIdx].x) === -1 ? 180 - (getPointDegree(itemRects[nextIdx]) * (180 / Math.PI)) + 180 :  getPointDegree(itemRects[nextIdx]) * (180 / Math.PI);
+    prevDegree = Math.sign(itemRects[prevIdx].x) === -1 ? (180 - (getPointDegree(itemRects[prevIdx])) + 180) :  getPointDegree(itemRects[prevIdx]);
+    nextDegree = Math.sign(itemRects[nextIdx].x) === -1 ? (180 - (getPointDegree(itemRects[nextIdx])) + 180) :  getPointDegree(itemRects[nextIdx]);
 }
 
 canvas.onmousemove = function (e) {
@@ -247,7 +247,7 @@ canvas.onmousemove = function (e) {
     if (isMouseDown && selItemIdx !== null) {
         curMovingCoordinate = { "x": c.x, "y": c.y }
 
-        curDegree = Math.sign(curMovingCoordinate.x) === -1 ? 180 - (getPointDegree(curMovingCoordinate) * (180 / Math.PI)) + 180 :  getPointDegree(curMovingCoordinate) * (180 / Math.PI);
+        curDegree = Math.sign(curMovingCoordinate.x) === -1 ? 180 - (getPointDegree(curMovingCoordinate)) + 180 :  getPointDegree(curMovingCoordinate);
         // TODO 클릭된 항목의 위치를 변경한다.
         console.log('prevDegree :', prevDegree);
         console.log('curDegree :', curDegree);
