@@ -3,7 +3,7 @@
 소속 : (주)iKooB 개발부 프론트 엔지니어
 작성일: 2019.05.21
 파일명: chart.js
-설명: 원 차트 항목의 범위를 마우스 클릭이동 형식으로 유동적으로 변경이 가능한 차트다.
+설명: 3rd라이브러리 없이 가볍게 만들어진 원 차트다. 원 차트 항목의 범위를 마우스 클릭이동 형식으로 유동적으로 변경이 가능한 차트다.
 기술스펙:
  - HTML5
  - CSS3
@@ -30,44 +30,44 @@
  * 캔버스 객체
  * @type {HTMLElement}
  */
-var canvas = document.getElementById("canvas");
+let canvas = document.getElementById("canvas");
 
 /**
  * 컨텍스트 객체
  * @type {object}
  */
-var ctx = canvas.getContext("2d");
+let ctx = canvas.getContext("2d");
 
 /**
  * 차트 도우미
  * @type {Object}
  */
-var chartHelper;
+let chartHelper = null;
 
 /**
  * 반지름
  * @type {Number}
  */
-var radius = null;
+let radius = null;
 
 /**
  * 마우스 누름 여부
  * @type {Boolean}
  */
-var isMouseDown = false;
+let isMouseDown = false;
 
 /**
  * 항목영역 사각형의 x, y, w, h 목록
  * @type {Boolean}
  */
-var itemRects = [];
+let itemRects = [];
 
 /**
  * 항목 목록
  * @TODO 추후 서버에서 데이터 받아올것!
  * @type {Array}
  */
-var items = [
+let items = [
     { "nm": "sh1", "high": 80, "x": null, "y": null },
     { "nm": "sh2", "high": 50, "x": null, "y": null },
     { "nm": "sh3", "high": 70, "x": null, "y": null },
@@ -79,15 +79,19 @@ var items = [
  * 선택된 항목의 인덱스
  * @type {Number}
  */
-var selItemIdx = null;
+let selItemIdx = null;
 
 /**
  * 이동중인 좌표
  * @type {Number}
  */
-var curMovingCoordinate = { "x": null, "y": null };
+let curMovingCoordinate = { "x": null, "y": null };
 
-var chartProperty = {
+/**
+ * 차트 프로퍼티
+ * @type {Object}
+ */
+const chartProperty = {
     circle: {
         STROKE_STYLE: '#E3E3E3'
     },
@@ -151,7 +155,7 @@ function drawChart() {
  * 원을 그린다.
  */
 function drawCircle() {
-    for (var idx = 0; idx < 11; idx++) {
+    for (let idx = 0; idx < 11; idx++) {
         ctx.beginPath();
         ctx.arc(0, 0, radius / 10 * idx, 0, 2 * Math.PI);
         ctx.strokeStyle = chartProperty.circle.STROKE_STYLE;
@@ -163,19 +167,19 @@ function drawCircle() {
  * 항목을 그린다.
  */
 function drawItem() {
-    ctx.globalAlpha = 1;
+    let ang = 0;
+    let rect = {};
 
-    var ang = 0,
-        idx = 0,
-        rect = {};
     itemRects = [];
+    ctx.globalAlpha = 1;
     ctx.font = chartProperty.item.FONT;
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    for (idx; idx < items.length; idx++) {
+
+    items.forEach((item, idx) => {
         ang = idx * Math.PI / (items.length / 2);
-        if (items[idx].x !== null) {
-            ang = getPointDegreeOrRadian(items[idx], true);
+        if (item.x !== null) {
+            ang = getPointDegreeOrRadian(item, true);
         }
         if (isMouseDown && idx === selItemIdx) {
             ang = getPointDegreeOrRadian(curMovingCoordinate, true);
@@ -185,10 +189,10 @@ function drawItem() {
         y = -Math.cos(ang) * radius * 1.1;
 
         if (isMouseDown && idx === selItemIdx) {
-            items[idx].x = x;
-            items[idx].y = y;
+            item.x = x;
+            item.y = y;
         }
-        rect = { "x": x, "y": y, "w": ctx.measureText(items[idx].nm).width + 4, "h": 40 };
+        rect = { "x": x, "y": y, "w": ctx.measureText(item.nm).width + 4, "h": 40 };
         ctx.lineWidth = chartProperty.item.RECT_LINE_WIDTH;
         ctx.strokeStyle = chartProperty.item.RECT_STROKE_STYLE;
         ctx.fillStyle = chartProperty.item.RECT_FILL_STYLE;
@@ -196,21 +200,22 @@ function drawItem() {
         ctx.fillStyle = chartProperty.item.FONT_FILL_STYLE;
         ctx.fillText(items[idx].nm, x, y);
         itemRects[idx] = rect;
-    }
+    });
 }
 
 /**
  * 방향을 그린다.
  */
 function drawDirection() {
-    var ang;
+    let ang;
 
     ctx.beginPath();
-    ctx.strokeStyle = chartProperty.direction.STROKE_STYLE
-    for (var idx = 0; idx < items.length; idx++) {
+    ctx.strokeStyle = chartProperty.direction.STROKE_STYLE;
+
+    items.forEach((item, idx) => {
         ang = idx * Math.PI / (items.length / 2);
-        if (items[idx].x !== null) {
-            ang = getPointDegreeOrRadian(items[idx], true);
+        if (item.x !== null) {
+            ang = getPointDegreeOrRadian(item, true);
         }
         if (isMouseDown && idx === selItemIdx) {
             ang = getPointDegreeOrRadian(curMovingCoordinate, true);
@@ -222,34 +227,34 @@ function drawDirection() {
         ctx.lineTo(x, y);
         ctx.lineWidth = chartProperty.direction.LINE_WIDTH;
         ctx.stroke();
-    }
+    });
 }
 
 /**
  * 범위를 그린다.
  */
 function drawRange() {
-    var x
+    let x
         , y
         , ang
         , high;
 
     ctx.beginPath();
-    for (var idx = 0; idx < items.length; idx++) {
+    items.forEach((item, idx) => {
         ang = idx * Math.PI / (items.length / 2);
-        if (items[idx].x !== null) {
-            ang = getPointDegreeOrRadian(items[idx], true);
+        if (item.x !== null) {
+            ang = getPointDegreeOrRadian(item, true);
         }
         if (isMouseDown && idx === selItemIdx) {
             ang = getPointDegreeOrRadian(curMovingCoordinate, true);
         }
 
-        high = radius * (items[idx].high / 100);
+        high = radius * (item.high / 100);
         x = Math.sin(ang) * (high);
         y = -Math.cos(ang) * (high);
 
         idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    }
+    });
 
     ctx.closePath();
     ctx.strokeStyle = chartProperty.range.STROKE_STYLE;
@@ -266,11 +271,9 @@ function drawRange() {
  * @param {Boolean} isRadian 라디안반환 여부
  */
 function getPointDegreeOrRadian(coor, isRadian) {
-    return isRadian ?
-        (180 - Math.atan2(coor.x, coor.y) * (180 / Math.PI)) * (Math.PI / 180) :
-        180 - Math.atan2(coor.x, coor.y) * (180 / Math.PI);
+    let degree = 180 - Math.atan2(coor.x, coor.y) * (180 / Math.PI);
+    return isRadian ? degree * (Math.PI / 180) : degree;
 }
-
 
 /** ====================================================================================================================================*
  *                                                      3. eventlistener definition                                                     *  
@@ -286,30 +289,41 @@ canvas.onmousedown = function (event) {
     }
 }
 
-canvas.onmousemove = function (e) {
-    // TODO==== [START] 좌표 표시를 위한 임시로직
-    var c = chartHelper.getMousePos(event);
-    document.querySelector('p')
-        .innerHTML = `X = ${c.x} Y = ${c.y} D = ${getPointDegreeOrRadian(curMovingCoordinate, false)}`;
-    // ======== [END] 좌표 표시를 위한 임시로직
+canvas.onmousemove = function (event) {
 
-    chartHelper.checkCursorRange(event);
+
     if (isMouseDown && selItemIdx !== null) {
+        chartHelper.checkCursorRange(event);
+
+        // TODO==== [START] 좌표 표시를 위한 임시로직
+        let c = chartHelper.getMousePos(event);
+        document.querySelector('p')
+            .innerHTML = `
+            selected = ${items[selItemIdx].nm} <br/>  
+            x = ${parseInt(items[selItemIdx].x, 10)} <br/>
+            y = ${parseInt(items[selItemIdx].y, 10)} <br/>
+            D = ${parseInt(getPointDegreeOrRadian(curMovingCoordinate, false), 10)} 
+            <hr> 
+            mX = ${c.x} <br/> 
+            mY = ${c.y} <br/>
+        `;
+        // ======== [END] 좌표 표시를 위한 임시로직
+
         curMovingCoordinate = { "x": c.x, "y": c.y }
         curDegree = getPointDegreeOrRadian(curMovingCoordinate, true);
         drawChart();
-        
-// TODO 클릭된 항목의 위치를 변경한다.
-// if (curDegree > prevDegree && curDegree < nextDegree || curDegree < prevDegree && curDegree < nextDegree || curDegree > prevDegree && curDegree > nextDegree) {
-// drawChart();
-// }
+
+        // TODO 클릭된 항목의 위치를 변경한다.
+        // if (curDegree > prevDegree && curDegree < nextDegree || curDegree < prevDegree && curDegree < nextDegree || curDegree > prevDegree && curDegree > nextDegree) {
+        // drawChart();
+        // }
 
     }
 }
 
 canvas.onmouseup = function (event) {
     isMouseDown = false;
-    var c = chartHelper.getMousePos(event);
+    let c = chartHelper.getMousePos(event);
 
     if (selItemIdx !== null) {
         items[selItemIdx].x = c.x;
@@ -343,13 +357,7 @@ function chartHelperFn() {
          * @param {Boolean} fill 채움 여부
          * @param {Boolean} stroke 그리기 여부
          */
-        roundRectForItem: function (ctx, x, y, w, h, radius, fill, stroke) {
-            if (typeof stroke === "undefined") {
-                stroke = true;
-            }
-            if (typeof radius === "undefined") {
-                radius = 5;
-            }
+        roundRectForItem: function (ctx, x, y, w, h, radius = 5, fill, stroke = true) {
 
             ctx.beginPath();
             ctx.moveTo(x + radius, y);
@@ -375,8 +383,8 @@ function chartHelperFn() {
          * @param {Event} e 클릭 이벤트 객체
          */
         checkCursorRange: function (e) {
-            var p = this.getMousePos(e);
-            var selIdx = null;
+            let p = this.getMousePos(e);
+            let selIdx = null;
 
             itemRects.some((rect, idx) => {
                 if (p.x >= rect.x - 20 && p.x <= rect.x - 20 + rect.w &&
@@ -398,7 +406,7 @@ function chartHelperFn() {
          * @param {Event} e 클릭 이벤트 객체
          */
         getMousePos: function (e) {
-            var r = canvas.getBoundingClientRect();
+            let r = canvas.getBoundingClientRect();
             return {
                 x: e.clientX - r.left - canvas.width / 2,
                 y: e.clientY - r.top - canvas.height / 2
