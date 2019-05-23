@@ -1,9 +1,10 @@
 /*! *****************************************************************************
-작성자: 김성현
-소속 : (주)iKooB 개발부 프론트 엔지니어
-작성일: 2019.05.21
-파일명: chart.js
-설명: 3rd라이브러리 없이 가볍게 만들어진 원 차트다. 원 차트 항목의 범위를 마우스 클릭이동 형식으로 유동적으로 변경이 가능한 차트다.
+작성자 : 김성현
+소속   : (주)iKooB 개발부 프론트 엔지니어
+이메일 : 
+작성일 : 2019.05.21
+파일명 : chart.js
+설명   : 3rd라이브러리 없이 가볍게 만들어진 원 차트다. 원 차트 항목의 범위를 마우스 클릭이동 형식으로 유동적으로 변경이 가능한 차트다.
 기술스펙:
  - HTML5
  - CSS3
@@ -211,7 +212,6 @@ function drawDirection() {
 
     ctx.beginPath();
     ctx.strokeStyle = chartProperty.direction.STROKE_STYLE;
-
     items.forEach((item, idx) => {
         ang = idx * Math.PI / (items.length / 2);
         if (item.x !== null) {
@@ -266,11 +266,10 @@ function drawRange() {
 
 /**
  * 각도 혹은 라디안을 반환한다.
- * 
  * @param {Object} coor x, y 좌표값
  * @param {Boolean} isRadian 라디안반환 여부
  */
-function getPointDegreeOrRadian(coor, isRadian) {
+function getPointDegreeOrRadian(coor, isRadian = false) {
     let degree = 180 - Math.atan2(coor.x, coor.y) * (180 / Math.PI);
     return isRadian ? degree * (Math.PI / 180) : degree;
 }
@@ -290,27 +289,23 @@ canvas.onmousedown = function (event) {
 }
 
 canvas.onmousemove = function (event) {
-
-
-    if (isMouseDown && selItemIdx !== null) {
-        chartHelper.checkCursorRange(event);
-
+    chartHelper.checkCursorRange(event);
         // TODO==== [START] 좌표 표시를 위한 임시로직
         let c = chartHelper.getMousePos(event);
         document.querySelector('p')
             .innerHTML = `
-            selected = ${items[selItemIdx].nm} <br/>  
-            x = ${parseInt(items[selItemIdx].x, 10)} <br/>
-            y = ${parseInt(items[selItemIdx].y, 10)} <br/>
-            D = ${parseInt(getPointDegreeOrRadian(curMovingCoordinate, false), 10)} 
+            selected = ${!items[selItemIdx] ? '?' : items[selItemIdx].nm} <br/>  
+            x = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].x, 10)} <br/>
+            y = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].y, 10)} <br/>
+            D = ${!items[selItemIdx] ? '?' : parseInt(getPointDegreeOrRadian(curMovingCoordinate), 10)} 
             <hr> 
             mX = ${c.x} <br/> 
             mY = ${c.y} <br/>
         `;
         // ======== [END] 좌표 표시를 위한 임시로직
-
+    if (isMouseDown && selItemIdx !== null) {
         curMovingCoordinate = { "x": c.x, "y": c.y }
-        curDegree = getPointDegreeOrRadian(curMovingCoordinate, true);
+        curDegree = getPointDegreeOrRadian(curMovingCoordinate);
         drawChart();
 
         // TODO 클릭된 항목의 위치를 변경한다.
@@ -358,7 +353,6 @@ function chartHelperFn() {
          * @param {Boolean} stroke 그리기 여부
          */
         roundRectForItem: function (ctx, x, y, w, h, radius = 5, fill, stroke = true) {
-
             ctx.beginPath();
             ctx.moveTo(x + radius, y);
             ctx.lineTo(x + w - radius, y);
