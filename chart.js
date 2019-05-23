@@ -113,7 +113,7 @@ const chartProperty = {
  * 차트 헬퍼 오브젝트이다.
  * @type {Object}
  */
-const chartHelper = (function() {
+const chartHelper = (function () {
     return {
         /**
          * 항목을 감싸는 사각형을 그린다.
@@ -257,13 +257,13 @@ function drawItem() {
 
         // 사각형의 감싸진 텍스트를 그린다.
         rect = { "x": x, "y": y, "w": ctx.measureText(item.nm).width + 4, "h": 40 };
-        ctx.lineWidth   = chartProperty.item.RECT_LINE_WIDTH;
+        ctx.lineWidth = chartProperty.item.RECT_LINE_WIDTH;
         ctx.strokeStyle = chartProperty.item.RECT_STROKE_STYLE;
-        ctx.fillStyle   = chartProperty.item.RECT_FILL_STYLE;
+        ctx.fillStyle = chartProperty.item.RECT_FILL_STYLE;
         chartHelper.roundRectForItem(ctx, rect.x - 20, rect.y - 20, rect.w, rect.h, 10, true);
-        ctx.fillStyle   = chartProperty.item.FONT_FILL_STYLE;
+        ctx.fillStyle = chartProperty.item.FONT_FILL_STYLE;
         ctx.fillText(items[idx].nm, x, y);
-        itemRects[idx]  = rect;
+        itemRects[idx] = rect;
     });
 }
 
@@ -278,8 +278,10 @@ function drawDirection() {
     items.forEach((item, idx) => {
         // x, y좌표를 구한다.
         radian = getRadianFromItem(item, idx);
-        x      = Math.sin(radian) * radius;
-        y      = -Math.cos(radian) * radius;
+        x = Math.sin(radian) * radius;
+        y = -Math.cos(radian) * radius;
+
+        // 항목의 위치를 가르킬 방향선을 그린다.
         ctx.moveTo(0, 0);
         ctx.lineTo(x, y);
         ctx.lineWidth = chartProperty.direction.LINE_WIDTH;
@@ -298,14 +300,17 @@ function drawRange() {
 
     ctx.beginPath();
     items.forEach((item, idx) => {
+        // x, y좌표를 구한다.
         radian = getRadianFromItem(item, idx);
-        high   = radius * (item.high / 100);
-        x      = Math.sin(radian) * (high);
-        y      = -Math.cos(radian) * (high);
+        high = radius * (item.high / 100);
+        x = Math.sin(radian) * (high);
+        y = -Math.cos(radian) * (high);
 
+        // 항목별 높이를 연결한다.
         idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
 
+    // 연결된 높이들을 스타일을 적용한다.
     ctx.closePath();
     ctx.strokeStyle = chartProperty.range.STROKE_STYLE;
     ctx.fillStyle = chartProperty.range.FILL_STYLE;
@@ -318,14 +323,21 @@ function drawRange() {
  * 각도 혹은 라디안을 반환한다.
  * @param {Object} coor x, y 좌표값
  * @param {Boolean} isRadian 라디안반환 여부
+ * @return {Number} 각도 혹은 라디안
  */
 function getPointDegreeOrRadian(coor, isRadian = false) {
     let degree = 180 - Math.atan2(coor.x, coor.y) * (180 / Math.PI);
     return isRadian ? degree * (Math.PI / 180) : degree;
 }
 
+/**
+ * 항목의 라디안을 반환한다.
+ * @param {Object} item 항목
+ * @param {Number} idx 인덱스
+ * @return {Number} 항목의 라디안 값
+ */
 function getRadianFromItem(item, idx) {
-    let radian; 
+    let radian;
 
     if (isMouseDown && idx === selItemIdx) {
         radian = getPointDegreeOrRadian(curMovingCoordinate, true);
@@ -349,55 +361,58 @@ function getRadianFromItem(item, idx) {
  * 캔버스 이벤트 리스너를 초기화한다.
  * @TODO 크로스브라우징, 모바일 기기 고려하는 로직 추가 할것
  */
-(function canvasEventListener () {
+(function canvasEventListener() {
     canvas.onmousedown = function (event) {
         isMouseDown = true;
         selItemIdx = chartHelper.checkCursorRange(event);
-    
+
         if (selItemIdx !== null) {
             getPointDegreeOrRadian(itemRects[selItemIdx === 0 ? items.length - 1 : selItemIdx - 1], true);
             getPointDegreeOrRadian(itemRects[selItemIdx === items.length - 1 ? 0 : selItemIdx + 1], true);
         }
     }
-    
+
     canvas.onmousemove = function (event) {
         chartHelper.checkCursorRange(event);
-            // TODO============================================ [START] 좌표 표시를 위한 임시로직 ============================================
-            let c = chartHelper.getMousePos(event);
-            document.querySelector('p')
-                .innerHTML = `
+        // TODO============================================ [START] 좌표 표시를 위한 임시로직 ============================================
+        let mousePos = chartHelper.getMousePos(event);
+        document.querySelector('p')
+            .innerHTML = `
                 selected = ${!items[selItemIdx] ? '?' : items[selItemIdx].nm} <br/>  
                 x = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].x, 10)} <br/>
                 y = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].y, 10)} <br/>
                 D = ${!items[selItemIdx] ? '?' : parseInt(getPointDegreeOrRadian(curMovingCoordinate), 10)} 
                 <hr> 
-                mX = ${c.x} <br/> 
-                mY = ${c.y} <br/>
+                mX = ${mousePos.x} <br/> 
+                mY = ${mousePos.y} <br/>
             `;
-            // ================================================ [END] 좌표 표시를 위한 임시로직 ================================================
-    
+        // ================================================ [END] 좌표 표시를 위한 임시로직 ================================================
+
+        // 마우스가 항목을 클릭하고 있는 상태라면...
         if (isMouseDown && selItemIdx !== null) {
-            curMovingCoordinate = { "x": c.x, "y": c.y };
+            // 현재 마우스 값을 기준으로 선택된 항목을 다시 그린다.
+            curMovingCoordinate = { "x": mousePos.x, "y": mousePos.y };
             getPointDegreeOrRadian(curMovingCoordinate);
             drawChart();
-    
+
             // TODO 이전 항목과 다음 항목을 넘어가지 않도록 로직 구사할것
             // if (curDegree > prevDegree && curDegree < nextDegree || curDegree < prevDegree && curDegree < nextDegree || curDegree > prevDegree && curDegree > nextDegree) {
             // drawChart();
             // }
         }
     }
-    
+
     canvas.onmouseup = function (event) {
         isMouseDown = false;
-        let c = chartHelper.getMousePos(event);
-    
+        let mousePos = chartHelper.getMousePos(event);
+
+        // 선택된 항목의 x, y좌표를 마지막 값으로 수정한다.
         if (selItemIdx !== null) {
-            items[selItemIdx].x = c.x;
-            items[selItemIdx].y = c.y;
+            items[selItemIdx].x = mousePos.x;
+            items[selItemIdx].y = mousePos.y;
         }
     }
-    
+
     canvas.onmouseleave = function () {
         isMouseDown = false;
         selItemIdx = null;
