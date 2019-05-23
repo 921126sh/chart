@@ -64,11 +64,11 @@ var itemRects = [];
  * @type {Array}
  */
 var items = [
-    { "nm": "sh1", "high": 80, "position": null },
-    { "nm": "sh2", "high": 50, "position": null },
-    { "nm": "sh3", "high": 70, "position": null },
-    { "nm": "sh4", "high": 50, "position": null },
-    { "nm": "sh5", "high": 80, "position": null },
+    { "nm": "sh1", "high": 80, "x": null, "y": null },
+    { "nm": "sh2", "high": 50, "x": null, "y": null },
+    { "nm": "sh3", "high": 70, "x": null, "y": null },
+    { "nm": "sh4", "high": 50, "x": null, "y": null },
+    { "nm": "sh5", "high": 80, "x": null, "y": null },
 ];
 
 /**
@@ -143,29 +143,30 @@ function drawItem() {
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
     for (idx; idx < items.length; idx++) {
-        // ang = (180 - getPointDegree()) + 180) * (Math.PI / 180);
         ang = idx * Math.PI / (items.length / 2);
-
+        if (items[idx].x !== null) {
+            ang = getPointDegreeOrRadian(items[idx], true);
+        }
         if (isMouseDown && idx === selItemIdx) {
-            ang = Math.sign(curMovingCoordinate.x) === -1 ? (180 - (getPointDegree(curMovingCoordinate)) + 180) * (Math.PI / 180) : getPointDegree(curMovingCoordinate) * (Math.PI / 180);
+            ang = getPointDegreeOrRadian(curMovingCoordinate, true);
         }
 
         x = Math.sin(ang) * radius * 1.15;
         y = -Math.cos(ang) * radius * 1.1;
-        rect = { "x": x - 20, "y": y - 20, "w": ctx.measureText(items[idx].nm).width + 4, "h": 40 };
 
+        if (isMouseDown && idx === selItemIdx) {
+            items[idx].x = x;
+            items[idx].y = y;
+        }
+        rect = { "x": x, "y": y, "w": ctx.measureText(items[idx].nm).width + 4, "h": 40 };
         ctx.lineWidth = 4;
         ctx.strokeStyle = "#E3E3E3";
         ctx.fillStyle = "white";
-        chartHelper.roundRect(ctx, rect.x, rect.y, rect.w, rect.h, 10, true);
+        chartHelper.roundRect(ctx, rect.x - 20, rect.y - 20, rect.w, rect.h, 10, true);
         ctx.fillStyle = "#000000";
         ctx.fillText(items[idx].nm, x, y);
         itemRects[idx] = rect;
     }
-}
-
-function getPointDegree(coor) {
-    return Math.acos((-radius * coor.y) / SQRT) * (180 / Math.PI);
 }
 
 /**
@@ -178,10 +179,13 @@ function drawDirection() {
     ctx.strokeStyle = "#E3E3E3";
     for (var idx = 0; idx < items.length; idx++) {
         ang = idx * Math.PI / (items.length / 2);
-        if (isMouseDown && idx === selItemIdx) {
-            ang = Math.sign(curMovingCoordinate.x) === -1 ? (180 - (getPointDegree(curMovingCoordinate)) + 180) * (Math.PI / 180) : getPointDegree(curMovingCoordinate) * (Math.PI / 180);
+        if (items[idx].x !== null) {
+            ang = getPointDegreeOrRadian(items[idx], true);
         }
-
+        if (isMouseDown && idx === selItemIdx) {
+            ang = getPointDegreeOrRadian(curMovingCoordinate, true);
+        }
+        
         x = Math.sin(ang) * radius;
         y = -Math.cos(ang) * radius;
         ctx.moveTo(0, 0);
@@ -203,8 +207,11 @@ function drawRange() {
     ctx.beginPath();
     for (var idx = 0; idx < items.length; idx++) {
         ang = idx * Math.PI / (items.length / 2);
+        if (items[idx].x !== null) {
+            ang = getPointDegreeOrRadian(items[idx], true);
+        }
         if (isMouseDown && idx === selItemIdx) {
-            ang = Math.sign(curMovingCoordinate.x) === -1 ? (180 - (getPointDegree(curMovingCoordinate)) + 180) * (Math.PI / 180) : getPointDegree(curMovingCoordinate) * (Math.PI / 180);
+            ang = getPointDegreeOrRadian(curMovingCoordinate, true);
         }
 
         high = radius * (items[idx].high / 100);
@@ -222,6 +229,21 @@ function drawRange() {
     ctx.stroke();
 }
 
+/**
+ * 각도 혹은 라디안을 반환한다.
+ * 
+ * @param {Object} coor x, y 좌표값
+ * @param {Boolean} isRadian 라디안반환 여부
+ */
+function getPointDegreeOrRadian(coor, isRadian) {
+    return isRadian ? (180 - Math.atan2(coor.x, coor.y) * (180 / Math.PI)) * (Math.PI / 180) : 180 - Math.atan2(coor.x, coor.y) * (180 / Math.PI)
+    // var degree = Math.acos((-radius * coor.y) / SQRT) * (180 / Math.PI);
+
+    // return Math.sign(coor.x) === -1 ?
+    //     180 - (degree) + 180 :
+    //     degree * (isRadian ? Math.PI / 180 : 1);
+}
+
 
 /** ====================================================================================================================================*
  *                                                      3. eventlistener definition                                                     *  
@@ -232,22 +254,22 @@ canvas.onmousedown = function (event) {
     selItemIdx = chartHelper.checkCursorRange(event);
     var prevIdx = selItemIdx === 0 ? items.length - 1 : selItemIdx - 1;
     var nextIdx = selItemIdx === items.length - 1 ? 0 : selItemIdx + 1;
-    prevDegree = Math.sign(itemRects[prevIdx].x) === -1 ? (180 - (getPointDegree(itemRects[prevIdx])) + 180) :  getPointDegree(itemRects[prevIdx]);
-    nextDegree = Math.sign(itemRects[nextIdx].x) === -1 ? (180 - (getPointDegree(itemRects[nextIdx])) + 180) :  getPointDegree(itemRects[nextIdx]);
+    prevDegree = getPointDegreeOrRadian(itemRects[prevIdx], true);
+    nextDegree = getPointDegreeOrRadian(itemRects[nextIdx], true);
 }
 
 canvas.onmousemove = function (e) {
     // TODO==== [START] 좌표 표시를 위한 임시로직
     var c = chartHelper.getMousePos(event);
     document.querySelector('p')
-        .innerHTML = `X = ${c.x} Y = ${c.y}`;
+    .innerHTML = `X = ${c.x} Y = ${c.y}`;
     // ======== [END] 좌표 표시를 위한 임시로직
-
+    
     chartHelper.checkCursorRange(event);
     if (isMouseDown && selItemIdx !== null) {
         curMovingCoordinate = { "x": c.x, "y": c.y }
 
-        curDegree = Math.sign(curMovingCoordinate.x) === -1 ? 180 - (getPointDegree(curMovingCoordinate)) + 180 :  getPointDegree(curMovingCoordinate);
+        curDegree = getPointDegreeOrRadian(curMovingCoordinate, true);
         // TODO 클릭된 항목의 위치를 변경한다.
         console.log('prevDegree :', prevDegree);
         console.log('curDegree :', curDegree);
@@ -255,7 +277,6 @@ canvas.onmousemove = function (e) {
         if (curDegree > prevDegree && curDegree < nextDegree) {
             ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 
-            
             drawChart();
         }
     }
@@ -263,6 +284,9 @@ canvas.onmousemove = function (e) {
 
 canvas.onmouseup = function (event) {
     isMouseDown = false;
+    var c = chartHelper.getMousePos(event);
+    items[selItemIdx].x = c.x;
+    items[selItemIdx].y = c.y;
 }
 
 canvas.onmouseleave = function (event) {
@@ -324,8 +348,8 @@ function chartHelperFn() {
             var selIdx = null;
 
             itemRects.some((rect, idx) => {
-                if (p.x >= rect.x && p.x <= rect.x + rect.w &&
-                    p.y >= rect.y && p.y <= rect.y + rect.h) {
+                if (p.x >= rect.x - 20 && p.x <= rect.x - 20 + rect.w &&
+                    p.y >= rect.y - 20 && p.y <= rect.y - 20 + rect.h) {
                     canvas.style.cursor = "pointer";
                     selIdx = idx;
                     return true;
