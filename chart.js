@@ -1,10 +1,10 @@
 /*! *****************************************************************************
 작성자 : 김성현
 소속   : (주)iKooB 개발부 프론트 엔지니어
-이메일 : 
+이메일 : seonghyun.kim@ikoob.com
 작성일 : 2019.05.21
-파일명 : chart.js
-설명   : 3rd라이브러리 없이 가볍게 만들어진 원 차트다. 원 차트 항목의 범위를 마우스 클릭이동 형식으로 유동적으로 변경이 가능한 차트다.
+이름   : rader chart v1.0
+설명   : 3rd라이브러리 없이 가볍게 만들어진 원 차트다. 원 차트 항목의 범위를 마우스 클릭이동 형식으로 유동적으로 변경이 가능하다.
 기술스펙:
  - HTML5
  - CSS3
@@ -64,6 +64,19 @@ let isMouseDown = false;
 let itemRects = [];
 
 /**
+ * 선택된 항목의 인덱스
+ * @type {Number}
+ */
+let selItemIdx = null;
+
+/**
+ * 이동중인 좌표
+ * @type {Number}
+ */
+let curMovingCoordinate = { "x": null, "y": null };
+
+
+/**
  * 항목 목록
  * @TODO 추후 서버에서 데이터 받아올것!
  * @type {Array}
@@ -75,18 +88,6 @@ let items = [
     { "nm": "sh4", "high": 50, "x": null, "y": null },
     { "nm": "sh5", "high": 80, "x": null, "y": null },
 ];
-
-/**
- * 선택된 항목의 인덱스
- * @type {Number}
- */
-let selItemIdx = null;
-
-/**
- * 이동중인 좌표
- * @type {Number}
- */
-let curMovingCoordinate = { "x": null, "y": null };
 
 /**
  * 차트 프로퍼티
@@ -283,14 +284,14 @@ canvas.onmousedown = function (event) {
     selItemIdx = chartHelper.checkCursorRange(event);
 
     if (selItemIdx !== null) {
-        prevDegree = getPointDegreeOrRadian(itemRects[selItemIdx === 0 ? items.length - 1 : selItemIdx - 1], true);
-        nextDegree = getPointDegreeOrRadian(itemRects[selItemIdx === items.length - 1 ? 0 : selItemIdx + 1], true);
+        getPointDegreeOrRadian(itemRects[selItemIdx === 0 ? items.length - 1 : selItemIdx - 1], true);
+        getPointDegreeOrRadian(itemRects[selItemIdx === items.length - 1 ? 0 : selItemIdx + 1], true);
     }
 }
 
 canvas.onmousemove = function (event) {
     chartHelper.checkCursorRange(event);
-        // TODO==== [START] 좌표 표시를 위한 임시로직
+        // TODO============================================ [START] 좌표 표시를 위한 임시로직 ============================================
         let c = chartHelper.getMousePos(event);
         document.querySelector('p')
             .innerHTML = `
@@ -302,17 +303,17 @@ canvas.onmousemove = function (event) {
             mX = ${c.x} <br/> 
             mY = ${c.y} <br/>
         `;
-        // ======== [END] 좌표 표시를 위한 임시로직
+        // ================================================ [END] 좌표 표시를 위한 임시로직 ================================================
+
     if (isMouseDown && selItemIdx !== null) {
-        curMovingCoordinate = { "x": c.x, "y": c.y }
-        curDegree = getPointDegreeOrRadian(curMovingCoordinate);
+        curMovingCoordinate = { "x": c.x, "y": c.y };
+        getPointDegreeOrRadian(curMovingCoordinate);
         drawChart();
 
-        // TODO 클릭된 항목의 위치를 변경한다.
+        // TODO 이전 항목과 다음 항목을 넘어가지 않도록 로직 구사할것
         // if (curDegree > prevDegree && curDegree < nextDegree || curDegree < prevDegree && curDegree < nextDegree || curDegree > prevDegree && curDegree > nextDegree) {
         // drawChart();
         // }
-
     }
 }
 
@@ -326,7 +327,7 @@ canvas.onmouseup = function (event) {
     }
 }
 
-canvas.onmouseleave = function (event) {
+canvas.onmouseleave = function () {
     isMouseDown = false;
     selItemIdx = null;
 }
