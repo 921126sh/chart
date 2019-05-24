@@ -39,6 +39,12 @@ let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 /**
+ * 차트헬퍼 오브젝트
+ * @type {Object}
+ */
+let chartHelper;
+
+/**
  * 반지름
  * @type {Number}
  */
@@ -52,7 +58,7 @@ let isMouseDown = false;
 
 /**
  * 항목영역 사각형의 x, y, w, h 목록
- * @type {Boolean}
+ * @type {Object[]}
  */
 let itemRects = [];
 
@@ -72,7 +78,7 @@ let curMovingCoordinate = { "x": null, "y": null };
 /**
  * 항목 목록
  * @TODO 추후 서버에서 데이터 받아올것!
- * @type {Array}
+ * @type {Object[]}
  */
 let items = [
     { "nm": "sh1", "high": 80, "x": null, "y": null },
@@ -109,89 +115,16 @@ const chartProperty = {
     }
 };
 
-/**
- * 차트 헬퍼 오브젝트이다.
- * @type {Object}
- */
-const chartHelper = (function () {
-    return {
-        /**
-         * 항목을 감싸는 사각형을 그린다.
-         * 
-         * @param {object} ctx 캔버스 컨텍스트
-         * @param {Number} x x축
-         * @param {Number} y y축
-         * @param {Number} w 넓이
-         * @param {Number} h 높이
-         * @param {Number} radius 반지름
-         * @param {Boolean} fill 채움 여부
-         * @param {Boolean} stroke 그리기 여부
-         */
-        roundRectForItem: function (ctx, x, y, w, h, radius = 5, fill, stroke = true) {
-            ctx.beginPath();
-            ctx.moveTo(x + radius, y);
-            ctx.lineTo(x + w - radius, y);
-            ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-            ctx.lineTo(x + w, y + h - radius);
-            ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-            ctx.lineTo(x + radius, y + h);
-            ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-            ctx.lineTo(x, y + radius);
-            ctx.quadraticCurveTo(x, y, x + radius, y);
-            ctx.closePath();
-            if (stroke) {
-                ctx.stroke();
-            }
-            if (fill) {
-                ctx.fill();
-            }
-        },
-
-        /**
-         * 커서활성화 영역인지 검사 한다.
-         * @param {Event} e 클릭 이벤트 객체
-         */
-        checkCursorRange: function (e) {
-            let p = this.getMousePos(e);
-            let selIdx = null;
-
-            itemRects.some((rect, idx) => {
-                if (p.x >= rect.x - 20 && p.x <= rect.x - 20 + rect.w &&
-                    p.y >= rect.y - 20 && p.y <= rect.y - 20 + rect.h) {
-                    canvas.style.cursor = "pointer";
-                    selIdx = idx;
-                    return true;
-                }
-
-                canvas.style.removeProperty("cursor");
-                return false;
-            });
-
-            return selIdx;
-        },
-
-        /**
-         * 마우스의 좌표를 반환한다.
-         * @param {Event} e 클릭 이벤트 객체
-         */
-        getMousePos: function (e) {
-            let r = canvas.getBoundingClientRect();
-            return {
-                x: e.clientX - r.left - canvas.width / 2,
-                y: e.clientY - r.top - canvas.height / 2
-            };
-        }
-    }
-}());
-
 /** ====================================================================================================================================*
  *                                                      2. function definition                                                          *  
  *======================================================================================================================================*/
 
 /**
  * 차트생성을 위한 초기화 함수다.
+ * @method init
  */
 (function init() {
+    chartHelper = chartHelperFn();
     // 원주율을 기준으로 영역을 초기화한다.
     radius = canvas.height / 2;
     ctx.translate(radius, radius);
@@ -245,7 +178,7 @@ function drawItem() {
 
     items.forEach((item, idx) => {
         // x, y좌표를 구한다.
-        radian = getRadianFromItem(item, idx);
+        radian = chartHelper.getRadianFromItem(item, idx);
         x = Math.sin(radian) * radius * 1.15;
         y = -Math.cos(radian) * radius * 1.1;
 
@@ -260,7 +193,7 @@ function drawItem() {
         ctx.lineWidth = chartProperty.item.RECT_LINE_WIDTH;
         ctx.strokeStyle = chartProperty.item.RECT_STROKE_STYLE;
         ctx.fillStyle = chartProperty.item.RECT_FILL_STYLE;
-        chartHelper.roundRectForItem(ctx, rect.x - 20, rect.y - 20, rect.w, rect.h, 10, true);
+        chartHelper.roundRectForItem(ctx, rect.x - (canvas.width * (4 / 100)), rect.y - (canvas.height * (4 / 100)), rect.w, rect.h, 10, true);
         ctx.fillStyle = chartProperty.item.FONT_FILL_STYLE;
         ctx.fillText(items[idx].nm, x, y);
         itemRects[idx] = rect;
@@ -269,6 +202,7 @@ function drawItem() {
 
 /**
  * 방향을 그린다.
+ * 
  */
 function drawDirection() {
     let radian;
@@ -277,7 +211,7 @@ function drawDirection() {
     ctx.strokeStyle = chartProperty.direction.STROKE_STYLE;
     items.forEach((item, idx) => {
         // x, y좌표를 구한다.
-        radian = getRadianFromItem(item, idx);
+        radian = chartHelper.getRadianFromItem(item, idx);
         x = Math.sin(radian) * radius;
         y = -Math.cos(radian) * radius;
 
@@ -301,7 +235,7 @@ function drawRange() {
     ctx.beginPath();
     items.forEach((item, idx) => {
         // x, y좌표를 구한다.
-        radian = getRadianFromItem(item, idx);
+        radian = chartHelper.getRadianFromItem(item, idx);
         high = radius * (item.high / 100);
         x = Math.sin(radian) * (high);
         y = -Math.cos(radian) * (high);
@@ -319,42 +253,10 @@ function drawRange() {
     ctx.stroke();
 }
 
-/**
- * 각도 혹은 라디안을 반환한다.
- * @param {Object} coor x, y 좌표값
- * @param {Boolean} isRadian 라디안반환 여부
- * @return {Number} 각도 혹은 라디안
- */
-function getPointDegreeOrRadian(coor, isRadian = false) {
-    let degree = 180 - Math.atan2(coor.x, coor.y) * (180 / Math.PI);
-    return isRadian ? degree * (Math.PI / 180) : degree;
-}
-
-/**
- * 항목의 라디안을 반환한다.
- * @param {Object} item 항목
- * @param {Number} idx 인덱스
- * @return {Number} 항목의 라디안 값
- */
-function getRadianFromItem(item, idx) {
-    let radian;
-
-    if (isMouseDown && idx === selItemIdx) {
-        radian = getPointDegreeOrRadian(curMovingCoordinate, true);
-    }
-    else if (item.x !== null) {
-        radian = getPointDegreeOrRadian(item, true);
-    }
-    else {
-        radian = idx * Math.PI / (items.length / 2);
-    }
-
-    return radian;
-}
 
 
 /** ====================================================================================================================================*
- *                                                      3. event listener definition                                                          *  
+ *                                                      3. event listener definition                                                    *  
  *======================================================================================================================================*/
 
 /**
@@ -367,32 +269,32 @@ function getRadianFromItem(item, idx) {
         selItemIdx = chartHelper.checkCursorRange(event);
 
         if (selItemIdx !== null) {
-            getPointDegreeOrRadian(itemRects[selItemIdx === 0 ? items.length - 1 : selItemIdx - 1], true);
-            getPointDegreeOrRadian(itemRects[selItemIdx === items.length - 1 ? 0 : selItemIdx + 1], true);
+            chartHelper.getPointDegreeOrRadian(itemRects[selItemIdx === 0 ? items.length - 1 : selItemIdx - 1], true);
+            chartHelper.getPointDegreeOrRadian(itemRects[selItemIdx === items.length - 1 ? 0 : selItemIdx + 1], true);
         }
     }
 
     canvas.onmousemove = function (event) {
         chartHelper.checkCursorRange(event);
-        // TODO============================================ [START] 좌표 표시를 위한 임시로직 ============================================
+        // ================================================= [TEMP1 - START] 좌표 표시를 위한 임시로직 ============================================
         let mousePos = chartHelper.getMousePos(event);
         document.querySelector('p')
             .innerHTML = `
                 selected = ${!items[selItemIdx] ? '?' : items[selItemIdx].nm} <br/>  
                 x = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].x, 10)} <br/>
                 y = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].y, 10)} <br/>
-                D = ${!items[selItemIdx] ? '?' : parseInt(getPointDegreeOrRadian(curMovingCoordinate), 10)} 
+                D = ${!items[selItemIdx] ? '?' : parseInt(chartHelper.getPointDegreeOrRadian(curMovingCoordinate), 10)} 
                 <hr> 
                 mX = ${mousePos.x} <br/> 
                 mY = ${mousePos.y} <br/>
             `;
-        // ================================================ [END] 좌표 표시를 위한 임시로직 ================================================
+        // ================================================ [TEMP1 - END] 좌표 표시를 위한 임시로직 ================================================
 
         // 마우스가 항목을 클릭하고 있는 상태라면...
         if (isMouseDown && selItemIdx !== null) {
             // 현재 마우스 값을 기준으로 선택된 항목을 다시 그린다.
             curMovingCoordinate = { "x": mousePos.x, "y": mousePos.y };
-            getPointDegreeOrRadian(curMovingCoordinate);
+            chartHelper.getPointDegreeOrRadian(curMovingCoordinate);
             drawChart();
 
             // TODO 이전 항목과 다음 항목을 넘어가지 않도록 로직 구사할것
@@ -418,3 +320,120 @@ function getRadianFromItem(item, idx) {
         selItemIdx = null;
     }
 }());
+
+
+/** ====================================================================================================================================*
+ *                                                      4. Helper difinition                                                            *  
+ *======================================================================================================================================*/
+
+/**
+ * 차트 헬퍼 오브젝트이다.
+ * @method chartHelperFn
+ */
+function chartHelperFn() {
+    return {
+        /**
+         * 항목을 감싸는 사각형을 그린다.
+         * 
+         * @param {object} ctx 캔버스 컨텍스트
+         * @param {Number} x x축
+         * @param {Number} y y축
+         * @param {Number} w 넓이
+         * @param {Number} h 높이
+         * @param {Number} radius 반지름
+         * @param {Boolean} fill 채움 여부
+         * @param {Boolean} stroke 그리기 여부
+         */
+        roundRectForItem: function (ctx, x, y, w, h, radius = 5, fill, stroke = true) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + w - radius, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+            ctx.lineTo(x + w, y + h - radius);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+            ctx.lineTo(x + radius, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            if (stroke) {
+                ctx.stroke();
+            }
+            if (fill) {
+                ctx.fill();
+            }
+        },
+
+        /**
+         * 마우스 커서활성화 영역인지 검사 한다.
+         * @TODO 활성화된 영역의 인덱스를 반환함... 명확함 메서드명과 주석으로 수정 할 것
+         * @param {Event} e 클릭 이벤트 객체
+         */
+        checkCursorRange: function (e) {
+            let mousePos = this.getMousePos(e);
+            let selIdx = null;
+
+            itemRects.some((rect, idx) => {
+                if (mousePos.x >= rect.x - (canvas.width * (4 / 100)) && mousePos.x <= rect.x - (canvas.height * (4 / 100)) + rect.w &&
+                    mousePos.y >= rect.y - (canvas.width * (4 / 100)) && mousePos.y <= rect.y - (canvas.height * (4 / 100)) + rect.h) {
+                    canvas.style.cursor = "pointer";
+                    selIdx = idx;
+                    return true;
+                }
+
+                canvas.style.removeProperty("cursor");
+                return false;
+            });
+
+            return selIdx;
+        },
+
+        /**
+         * 마우스의 좌표를 반환한다.
+         * @param {Event} e 클릭 이벤트 객체
+         */
+        getMousePos: function (e) {
+            let r = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - r.left - canvas.width / 2,
+                y: e.clientY - r.top - canvas.height / 2
+            };
+        },
+
+
+        /**
+         * 각도 혹은 라디안을 반환한다.
+         * @method getPointDegreeOrRadian
+         * @param {Object} coor x, y 좌표값
+         * @param {Boolean} isRadian 라디안반환 여부
+         * @return {Number} 각도 혹은 라디안
+         */
+        getPointDegreeOrRadian: function (coor, isRadian = false) {
+            let degree = 180 - Math.atan2(coor.x, coor.y) * (180 / Math.PI);
+            return isRadian ? degree * (Math.PI / 180) : degree;
+        },
+
+        /**
+         * 항목의 라디안을 반환한다.
+         * @method getRadianFromItem
+         * @param {Object} item 항목
+         * @param {Number} idx 인덱스
+         * @return {Number} 항목의 라디안 값
+         */
+        getRadianFromItem: function (item, idx) {
+            let radian;
+
+            if (isMouseDown && idx === selItemIdx) {
+                radian = this.getPointDegreeOrRadian(curMovingCoordinate, true);
+            }
+            else if (item.x !== null) {
+                radian = this.getPointDegreeOrRadian(item, true);
+            }
+            else {
+                radian = idx * Math.PI / (items.length / 2);
+            }
+
+            return radian;
+        }
+    }
+};
