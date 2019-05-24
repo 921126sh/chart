@@ -209,6 +209,9 @@ function drawDirection() {
 
     ctx.beginPath();
     ctx.strokeStyle = chartProperty.direction.STROKE_STYLE;
+
+    ctx.font = '14px arial';
+    ctx.globalAlpha = chartProperty.range.GLOBAL_ALPHA;
     items.forEach((item, idx) => {
         // x, y좌표를 구한다.
         radian = chartHelper.getRadianFromItem(item, idx);
@@ -220,7 +223,16 @@ function drawDirection() {
         ctx.lineTo(x, y);
         ctx.lineWidth = chartProperty.direction.LINE_WIDTH;
         ctx.stroke();
+
+        var c = 4;
+        for (i = 0; i < 11; i++) {
+            ctx.fillText(i, (x / 10 * i) - c, (y / 10 * i) - c);
+        }
     });
+
+    ctx.beginPath();
+
+
 }
 
 /**
