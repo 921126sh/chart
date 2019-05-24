@@ -17,7 +17,8 @@
 영역순서:
   1. variable definition 
   2. function definition 
-  3. eventl istener definition 
+  3. event listener definition 
+  4. helper difinition
 ***************************************************************************** */
 
 
@@ -119,16 +120,19 @@ const chartProperty = {
  *                                                      2. function definition                                                          *  
  *======================================================================================================================================*/
 
+
 /**
  * 차트생성을 위한 초기화 함수다.
  * @method init
  */
 (function init() {
-    chartHelper = chartHelperFn();
     // 원주율을 기준으로 영역을 초기화한다.
     radius = canvas.height / 2;
     ctx.translate(radius, radius);
     radius = radius * 0.80;
+    
+    // 차트헬퍼를 초기화한다.
+    chartHelper = chartHelperFn();
 
     // 차트생성을 요청한다.
     drawChart();
@@ -136,6 +140,7 @@ const chartProperty = {
 
 /**
  * 차트를 생성한다.
+ * @method drawChart
  */
 function drawChart() {
     // 0. 캔버스를 초기화한다.
@@ -152,6 +157,7 @@ function drawChart() {
 
 /**
  * 원을 그린다.
+ * @method drawCircle
  */
 function drawCircle() {
     let i = 0;
@@ -165,6 +171,7 @@ function drawCircle() {
 
 /**
  * 항목을 그린다.
+ * @method drawItem
  */
 function drawItem() {
     let radian = null;
@@ -202,7 +209,7 @@ function drawItem() {
 
 /**
  * 방향을 그린다.
- * 
+ * @method drawDirection
  */
 function drawDirection() {
     let radian;
@@ -229,14 +236,11 @@ function drawDirection() {
             ctx.fillText(i, (x / 10 * i) - c, (y / 10 * i) - c);
         }
     });
-
-    ctx.beginPath();
-
-
 }
 
 /**
  * 범위를 그린다.
+ * @method drawRange
  */
 function drawRange() {
     let x
@@ -271,6 +275,7 @@ function drawRange() {
  *                                                      3. event listener definition                                                    *  
  *======================================================================================================================================*/
 
+ 
 /**
  * 캔버스 이벤트 리스너를 초기화한다.
  * @TODO 크로스브라우징, 모바일 기기 고려하는 로직 추가 할것
@@ -287,20 +292,21 @@ function drawRange() {
     }
 
     canvas.onmousemove = function (event) {
-        chartHelper.checkCursorRange(event);
-        // ================================================= [TEMP1 - START] 좌표 표시를 위한 임시로직 ============================================
         let mousePos = chartHelper.getMousePos(event);
+        chartHelper.checkCursorRange(event);
+
+        // ================================================= [TEMP1 - START] 차트 정보 표시를 위한 임시로직 ============================================
         document.querySelector('p')
-            .innerHTML = `
-                selected = ${!items[selItemIdx] ? '?' : items[selItemIdx].nm} <br/>  
-                x = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].x, 10)} <br/>
-                y = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].y, 10)} <br/>
-                D = ${!items[selItemIdx] ? '?' : parseInt(chartHelper.getPointDegreeOrRadian(curMovingCoordinate), 10)} 
-                <hr> 
-                mX = ${mousePos.x} <br/> 
-                mY = ${mousePos.y} <br/>
-            `;
-        // ================================================ [TEMP1 - END] 좌표 표시를 위한 임시로직 ================================================
+        .innerHTML = `
+        S = ${!items[selItemIdx] ? '?' : items[selItemIdx].nm} <br/>  
+        X = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].x, 10)} <br/>
+        Y = ${!items[selItemIdx] ? '?' : parseInt(items[selItemIdx].y, 10)} <br/>
+        D = ${!items[selItemIdx] ? '?' : parseInt(chartHelper.getPointDegreeOrRadian(curMovingCoordinate), 10)} 
+        <hr> 
+        mX = ${mousePos.x} <br/> 
+        mY = ${mousePos.y} <br/>
+        `;
+        // ================================================= [TEMP1 - END] 차트 정보 표시를 위한 임시로직 ================================================
 
         // 마우스가 항목을 클릭하고 있는 상태라면...
         if (isMouseDown && selItemIdx !== null) {
@@ -335,8 +341,9 @@ function drawRange() {
 
 
 /** ====================================================================================================================================*
- *                                                      4. Helper difinition                                                            *  
+ *                                                      4. helper difinition                                                            *  
  *======================================================================================================================================*/
+
 
 /**
  * 차트 헬퍼 오브젝트이다.
